@@ -11,6 +11,7 @@ var cookieParser = require('cookie-parser');
 var dotenv = require('dotenv');
 var Instagram = require('instagram-node-lib');
 var mongoose = require('mongoose');
+var graph = require('fbgraph');
 var app = express();
 
 //local dependencies
@@ -120,7 +121,58 @@ app.get('/login', function(req, res){
 });
 
 app.get('/account', ensureAuthenticated, function(req, res){
-  res.render('account', {user: req.user});
+
+  var query = models.User.where({name: req.user.username});
+  query.findOne(function (err, user) {
+    if (err) return handleError(err);
+    if (user) {
+      Instagram.users.self({
+        access_token: user.access_token,
+        complete: function(data) {
+          //Map will iterate through the returned data obj
+          var imageArr = data.map(function(item) {
+            //create temporary json object
+            tempJSON = {};
+            tempJSON.url = item.images.low_resolution.url;
+            tempJSON.by = item.user.username;
+            tempJSON.comments_count = item.comments.count;
+            tempJSON.tags = item.tags;
+            tempJSON.tags_exist = item.tags.length > 0;
+            tempJSON.like_count = item.likes.count;
+            tempJSON.media_id = item.id;
+            //insert json object into image array
+            return tempJSON;
+          });
+          var photo_caption = data.caption;
+          var tags_arr = data.tags;
+
+          //var created_on = new Date(data.created_time);
+          res.render('account', {
+                                photos: imageArr,
+                                user: req.user
+                              });
+        }
+      });
+    }    
+  });
+});
+
+app.post('/account', ensureAuthenticated, function(req, res){
+  var query = models.User.where({name: req.user.username});
+  query.findOne(function (err, user) {
+    if (err) return handleError(err);
+    if (user) {
+      Instagram.media.like({
+        access_token: user.access_token,
+        media_id: req.body.media_id,
+        complete: function(data) {
+
+          //var created_on = new Date(data.created_time);
+          res.redirect('/account');
+        }
+      });
+    }    
+  });
 });
 
 app.get('/photos', ensureAuthenticated, function(req, res){
