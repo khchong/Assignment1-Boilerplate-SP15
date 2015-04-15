@@ -23,6 +23,13 @@ var INSTAGRAM_CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID;
 var INSTAGRAM_CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET;
 var INSTAGRAM_CALLBACK_URL = process.env.INSTAGRAM_CALLBACK_URL;
 var INSTAGRAM_ACCESS_TOKEN = "";
+
+// set facebook environment variables depending on env file
+var FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
+var FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+var FACEBOOK_CALLBACK_URL = process.env.FACEBOOK_CALLBACK_URL;
+var FACEBOOK_ACCESS_TOKEN = "";
+
 Instagram.set('client_id', INSTAGRAM_CLIENT_ID);
 Instagram.set('client_secret', INSTAGRAM_CLIENT_SECRET);
 
@@ -136,6 +143,9 @@ app.get('/account', ensureAuthenticated, function(req, res){
             tempJSON.url = item.images.low_resolution.url;
             tempJSON.by = item.user.username;
             tempJSON.comments_count = item.comments.count;
+            var time_created = new Date(item.created_time*1000);
+            tempJSON.created_time = time_created.toDateString();
+            tempJSON.caption = item.caption.text;
             tempJSON.tags = item.tags;
             tempJSON.tags_exist = item.tags.length > 0;
             tempJSON.like_count = item.likes.count;
@@ -222,6 +232,47 @@ app.get('/auth/instagram/callback',
   function(req, res) {
     res.redirect('/account');
   });
+
+// get authentication from user
+app.get('/auth/facebook', function(req, res) {
+
+  // we don't have a code yet
+  // so we'll redirect to the oauth dialog
+  if (!req.query.code) {
+    var authUrl = graph.getOauthUrl({
+        "client_id": FACEBOOK_APP_ID  
+      , "redirect_uri": FACEBOOK_CALLBACK_URL
+      , "scope": 'email, user_about_me, user_birthday, user_location, publish_stream'         
+    });
+
+    if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
+      res.redirect(authUrl);
+    } else {  //req.query.error == 'access_denied'
+      res.send('access denied');
+    }
+    return;
+  }
+
+  // code is set
+  // we'll send that and get the access token
+  graph.authorize({
+      "client_id":      FACEBOOK_APP_ID
+    , "redirect_uri":   FACEBOOK_CALLBACK_URL
+    , "client_secret":  FACEBOOK_APP_SECRET
+    , "code":           req.query.code
+  }, function (err, facebookRes) {
+    res.redirect('/fbaccount');
+  });
+
+
+});  
+
+// user gets sent here after being authorized
+app.get('/fbaccount', function(req, res) {
+  
+  res.render("fbaccount", { title: "Logged In" });
+});
+
 
 app.get('/logout', function(req, res){
   req.logout();
