@@ -261,6 +261,9 @@ app.get('/auth/facebook', function(req, res) {
     , "client_secret":  FACEBOOK_APP_SECRET
     , "code":           req.query.code
   }, function (err, facebookRes) {
+    if(err) {
+      console.log(err);
+    }
     res.redirect('/fbaccount');
   });
 
@@ -269,8 +272,17 @@ app.get('/auth/facebook', function(req, res) {
 
 // user gets sent here after being authorized
 app.get('/fbaccount', function(req, res) {
-  
-  res.render("fbaccount", { title: "Logged In" });
+
+  graph.get("/me", function(err, me) {
+
+    console.log(me);
+    res.render("fbaccount", 
+      { 
+        title: "Logged In",
+        user: me 
+      });
+  });
+
 });
 
 
