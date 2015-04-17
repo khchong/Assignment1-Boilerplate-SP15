@@ -242,7 +242,7 @@ app.get('/auth/facebook', function(req, res) {
     var authUrl = graph.getOauthUrl({
         "client_id": FACEBOOK_APP_ID  
       , "redirect_uri": FACEBOOK_CALLBACK_URL
-      , "scope": 'email, user_about_me, user_birthday, user_location, publish_stream'         
+      , "scope": 'email, read_stream, publish_stream, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
     });
 
     if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
@@ -264,6 +264,7 @@ app.get('/auth/facebook', function(req, res) {
     if(err) {
       console.log(err);
     }
+
     res.redirect('/fbaccount');
   });
 
@@ -273,14 +274,16 @@ app.get('/auth/facebook', function(req, res) {
 // user gets sent here after being authorized
 app.get('/fbaccount', function(req, res) {
 
-  graph.get("/me", function(err, me) {
+  graph.get("me/", function(err, me) {
 
-    console.log(me);
-    res.render("fbaccount", 
+      console.log(me);
+
+      res.render("fbaccount", 
       { 
         title: "Logged In",
         user: me 
       });
+
   });
 
 });
