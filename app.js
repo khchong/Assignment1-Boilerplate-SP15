@@ -242,7 +242,7 @@ app.get('/auth/facebook', function(req, res) {
     var authUrl = graph.getOauthUrl({
         "client_id": FACEBOOK_APP_ID  
       , "redirect_uri": FACEBOOK_CALLBACK_URL
-      , "scope": 'email, read_stream, publish_stream, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
+      , "scope": 'email, read_stream, read_friendlists, publish_stream, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
     });
 
     if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
@@ -274,18 +274,44 @@ app.get('/auth/facebook', function(req, res) {
 // user gets sent here after being authorized
 app.get('/fbaccount', function(req, res) {
 
-  graph.get("me/", function(err, me) {
+  graph.batch([
+    { method: "GET", relative_url: "me"},
+    { method: "GET", relative_url: "me/picture?redirect=false&width=300&height=300"},
+    { method: "GET", relative_url: "me/likes?filter=stream&limit=10000"},
+    { method: "GET", relative_url: "me/photos?filter=stream&limit=1000"},
+    { method: "GET", relative_url: "me"}
 
-      console.log(me);
+    ], function(err, data) {
+
+      var info_str_body = data[0].body;
+      var profpic_str_body = data[1].body;
+      var likes_str_body = data[2].body;
+      var photos_str_body = data[3].body;
+
+      var info_json_body = eval("(" + info_str_body + ")");
+      var profpic_json_body = eval("(" + profpic_str_body + ")");
+      var likes_json_body = eval("(" + likes_str_body + ")");
+      var photos_json_body = eval("(" + photos_str_body + ")");
+
+      var likes_count = "" + likes_json_body.data.length;
+      if(likes_json_body.data.length === 10000) {
+        likes_count = "10000+";
+      }
+
+      var photos_count = "" + photos_json_body.data.length;
+      if(photos_json_body.data.length === 1000) {
+        photos_count = "1000+";
+      }
 
       res.render("fbaccount", 
       { 
-        title: "Logged In",
-        user: me 
+        user: info_json_body,
+        profile_pic: profpic_json_body.data.url,
+        likes_count: likes_count,
+        photos_count: photos_count
       });
 
-  });
-
+    });
 });
 
 
