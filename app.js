@@ -145,7 +145,12 @@ app.get('/account', ensureAuthenticated, function(req, res){
             tempJSON.comments_count = item.comments.count;
             var time_created = new Date(item.created_time*1000);
             tempJSON.created_time = time_created.toDateString();
-            tempJSON.caption = item.caption.text;
+            
+            if(item.caption === null) {
+              tempJSON.caption = "No Caption";
+            } else {
+              tempJSON.caption = item.caption.text;
+            }
             tempJSON.tags = item.tags;
             tempJSON.tags_exist = item.tags.length > 0;
             tempJSON.like_count = item.likes.count;
@@ -153,9 +158,7 @@ app.get('/account', ensureAuthenticated, function(req, res){
             //insert json object into image array
             return tempJSON;
           });
-          var photo_caption = data.caption;
-          var tags_arr = data.tags;
-
+          
           //var created_on = new Date(data.created_time);
           res.render('account', {
                                 photos: imageArr,
@@ -167,6 +170,7 @@ app.get('/account', ensureAuthenticated, function(req, res){
   });
 });
 
+/* NOT COMPLETED, NEED PERMISSIONS FROM INSTAGRAM */
 app.post('/account', ensureAuthenticated, function(req, res){
   var query = models.User.where({name: req.user.username});
   query.findOne(function (err, user) {
@@ -267,56 +271,75 @@ app.get('/auth/facebook', function(req, res) {
 
     res.redirect('/fbaccount');
   });
-
-
 });  
 
 // user gets sent here after being authorized
 app.get('/fbaccount', function(req, res) {
 
-  graph.batch([
-    { method: "GET", relative_url: "me"},
-    { method: "GET", relative_url: "me/picture?redirect=false&width=300&height=300"},
-    { method: "GET", relative_url: "me/likes?filter=stream&limit=10000"},
-    { method: "GET", relative_url: "me/photos?filter=stream&limit=1000"},
-    { method: "GET", relative_url: "me"}
+  // make sure an access token has been set by graph.authorize()
+  if(graph.getAccessToken() === null) {
+    res.redirect('/login');
+  } else {
 
-    ], function(err, data) {
+    graph.get("me", function(err, user) {
 
-      var info_str_body = data[0].body;
-      var profpic_str_body = data[1].body;
-      var likes_str_body = data[2].body;
-      var photos_str_body = data[3].body;
+      if(err) { console.log(err); }
 
-      var info_json_body = eval("(" + info_str_body + ")");
-      var profpic_json_body = eval("(" + profpic_str_body + ")");
-      var likes_json_body = eval("(" + likes_str_body + ")");
-      var photos_json_body = eval("(" + photos_str_body + ")");
+      graph.batch([
+        { method: "GET", relative_url: "me/picture?redirect=false&width=300&height=300"},
+        { method: "GET", relative_url: "me/likes?filter=stream&limit=9999"},
+        { method: "GET", relative_url: "me/photos?filter=stream&limit=1000"},
+        { method: "GET", relative_url: "me/statuses?filter=stream&limit=9999"}
 
-      var likes_count = "" + likes_json_body.data.length;
-      if(likes_json_body.data.length === 10000) {
-        likes_count = "10000+";
-      }
+        ], function(err, data) {
+          if(err) { console.log(err); }
 
-      var photos_count = "" + photos_json_body.data.length;
-      if(photos_json_body.data.length === 1000) {
-        photos_count = "1000+";
-      }
+          var profpic_str_body = data[0].body;
+          var likes_str_body = data[1].body;
+          var photos_str_body = data[2].body;
+          var statuses_str_body = data[3].body;
 
-      res.render("fbaccount", 
-      { 
-        user: info_json_body,
-        profile_pic: profpic_json_body.data.url,
-        likes_count: likes_count,
-        photos_count: photos_count
+          var profpic_json_body = eval("(" + profpic_str_body + ")");
+          var likes_json_body = eval("(" + likes_str_body + ")");
+          var photos_json_body = eval("(" + photos_str_body + ")");
+          var statuses_json_body = eval("(" + statuses_str_body + ")");
+
+          console.log(statuses_json_body);
+
+          var statuses_count = "" + statuses_json_body.data.length;
+          if(statuses_json_body.data.length === 9999) {
+            statuses_count = "9999+";
+          }
+
+
+          var likes_count = "" + likes_json_body.data.length;
+          if(likes_json_body.data.length === 9999) {
+            likes_count = "9999+";
+          }
+
+          var photos_count = "" + photos_json_body.data.length;
+          if(photos_json_body.data.length === 1000) {
+            photos_count = "1000+";
+          }
+
+          res.render("fbaccount", 
+          { 
+            user: user,
+            profile_pic: profpic_json_body.data.url,
+            likes_count: likes_count,
+            photos_count: photos_count,
+            statuses_count: statuses_count
+          });
+
+        });
       });
-
-    });
+  }
 });
 
 
 app.get('/logout', function(req, res){
   req.logout();
+  graph.setAccessToken(null);
   res.redirect('/');
 });
 
