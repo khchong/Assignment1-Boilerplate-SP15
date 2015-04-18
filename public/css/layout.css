@@ -4,8 +4,7 @@
 }
 
 body {
-  background-color: #66FFCC;
-}
+  background-image: url("/img/background.jpg"); }
 
 .square, .btn {
     border-radius: 0px!important;

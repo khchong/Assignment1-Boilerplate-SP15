@@ -246,7 +246,7 @@ app.get('/auth/facebook', function(req, res) {
     var authUrl = graph.getOauthUrl({
         "client_id": FACEBOOK_APP_ID  
       , "redirect_uri": FACEBOOK_CALLBACK_URL
-      , "scope": 'email, read_stream, read_friendlists, publish_stream, manage_notifications, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
+      , "scope": 'email, read_friendlists, publish_stream, user_education_history, user_relationships, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
     });
 
     if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
@@ -290,8 +290,9 @@ app.get('/fbaccount', function(req, res) {
         { method: "GET", relative_url: "me/likes?filter=stream&limit=100"},
         { method: "GET", relative_url: "me/photos?filter=stream&limit=1000"},
         { method: "GET", relative_url: "me/statuses?filter=stream&limit=100"},
-        { method: "GET", relative_url: "me/posts"},
-        { method: "GET", relative_url: "me/notifications?filter=stream&limit=4"}
+        { method: "GET", relative_url: "me/notifications?filter=stream&limit=4"},
+        { method: "GET", relative_url: "me/photos?filter=stream&limit=2"}
+
 
         ], function(err, data) {
           if(err) { console.log(err); }
@@ -300,17 +301,17 @@ app.get('/fbaccount', function(req, res) {
           var likes_str_body = data[1].body;
           var photos_str_body = data[2].body;
           var statuses_str_body = data[3].body;
-          var posts_str_body = data[4].body;
-          var notifications_str_body = data[5].body;
+          var notifications_str_body = data[4].body;
+          var photosmin_str_body = data[5].body;
 
           var profpic_json_body = eval("(" + profpic_str_body + ")");
           var likes_json_body = eval("(" + likes_str_body + ")");
           var photos_json_body = eval("(" + photos_str_body + ")");
           var statuses_json_body = eval("(" + statuses_str_body + ")");
-          var posts_json_body = eval("(" + posts_str_body + ")");
           var notifications_json_body = eval("(" + notifications_str_body + ")");
+          var photosmin_json_body = eval("(" + photosmin_str_body + ")");
 
-          console.log(notifications_json_body);
+          console.log(photosmin_json_body);
 
           var statuses_count = "" + statuses_json_body.data.length;
           if(statuses_json_body.data.length === 100) {
@@ -329,9 +330,21 @@ app.get('/fbaccount', function(req, res) {
 
           // substitute null values
           if(!user.email) { user.email = "N/A"; }
-          if(!user.birthday) { user.email = "N/A"; }
-          if(!user.gender) { user.email = "N/A"; }
+          if(!user.birthday) { user.birthday = "N/A"; }
+          if(!user.gender) { user.gender = "N/A"; }
+          if(!user.relationship_status) { user.relationship_status = "N/A"; }
+          if(!photosmin_json_body.data[0].likes) { photosmin0_like_count = "0"; }
+            else { photosmin0_like_count = eval("(" + JSON.stringify(photosmin_json_body.data[0].likes) + ")").data.length; }
 
+          if(!photosmin_json_body.data[1].likes) { photosmin1_like_count = "0"; }
+            else { photosmin1_like_count = eval("(" + JSON.stringify(photosmin_json_body.data[1].likes) + ")").data.length; }
+
+          if(!photosmin_json_body.data[0].comments) { photosmin0_comment_count = "0"; }
+            else { photosmin0_comment_count = eval("(" + JSON.stringify(photosmin_json_body.data[0].comments) + ")").data.length; }
+
+          if(!photosmin_json_body.data[1].comments) { photosmin1_comment_count = "0"; }
+            else { photosmin1_comment_count = eval("(" + JSON.stringify(photosmin_json_body.data[1].comments) + ")").data.length }
+              
           res.render("fbaccount", 
           { 
             user: user,
@@ -339,7 +352,12 @@ app.get('/fbaccount', function(req, res) {
             likes_count: likes_count,
             photos_count: photos_count,
             statuses_count: statuses_count,
-            notifications: notifications_json_body.data
+            notifications: notifications_json_body.data,
+            photosmin: photosmin_json_body.data,
+            photosmin0_like_count: photosmin0_like_count,
+            photosmin1_like_count: photosmin1_like_count,
+            photosmin0_comment_count: photosmin0_comment_count,
+            photosmin1_comment_count: photosmin1_comment_count
           });
 
         });
