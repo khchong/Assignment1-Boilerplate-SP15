@@ -7,8 +7,13 @@
 					<div class="user-pad">
 						<h3>Welcome {{user.name}}</h3>
 						<h4 class="white"><i class="fa fa-check-circle-o"></i> {{user.location.name}}</h4>
-						<h4 class="white"><i class="fa fa-twitter"></i> CoolesOCool</h4>
-												
+
+						<br>
+						<h4 class="white"><i class="fa fa-envelope"></i> {{user.email}}</h4>
+						<br>
+						<h4 class="white"><i class="fa fa-male"></i> {{user.gender}}</h4>
+						<br>
+						<h4 class="white"><i class="fa fa-birthday-cake"> {{user.birthday}}</i></h4>
 					</div>
 				</div>
 				<div class="col-md-6 no-pad">
@@ -51,19 +56,16 @@
 		<div class="col-md-4 user-menu user-pad">
 			<div class="user-menu-content active">
 				<h3>
-				Basic Information
+				Unread Notifications
 				</h3>
 				<ul class="user-menu-list">
+				{{#each notifications}}
 					<li>
-						<h4> {{user.email}} </h4>
+						<h4> {{title}} </h4>
 					</li>
-					<li>
-						<h4 style="text-transform:capitalize;"> {{user.gender}} </h4>
-					</li>
-					<li>
-						<h4> {{user.birthday}} </h4>
-					</li>
+				{{/each}}
 				</ul>
+
 			</div>
 			<div class="user-menu-content">
 				<h3>
@@ -145,3 +147,5 @@
 				</div>
 			</div>
 		</div>
+	</div>
+</div>	

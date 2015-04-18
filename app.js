@@ -246,7 +246,7 @@ app.get('/auth/facebook', function(req, res) {
     var authUrl = graph.getOauthUrl({
         "client_id": FACEBOOK_APP_ID  
       , "redirect_uri": FACEBOOK_CALLBACK_URL
-      , "scope": 'email, read_stream, read_friendlists, publish_stream, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
+      , "scope": 'email, read_stream, read_friendlists, publish_stream, manage_notifications, user_photos, user_about_me, user_status, user_work_history, user_birthday, user_location, user_likes, user_friends, user_interests, user_photos'         
     });
 
     if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
@@ -286,10 +286,12 @@ app.get('/fbaccount', function(req, res) {
       if(err) { console.log(err); }
 
       graph.batch([
-        { method: "GET", relative_url: "me/picture?redirect=false&width=300&height=300"},
-        { method: "GET", relative_url: "me/likes?filter=stream&limit=9999"},
+        { method: "GET", relative_url: "me/picture?redirect=false&width=1000&height=1000"},
+        { method: "GET", relative_url: "me/likes?filter=stream&limit=100"},
         { method: "GET", relative_url: "me/photos?filter=stream&limit=1000"},
-        { method: "GET", relative_url: "me/statuses?filter=stream&limit=9999"}
+        { method: "GET", relative_url: "me/statuses?filter=stream&limit=100"},
+        { method: "GET", relative_url: "me/posts"},
+        { method: "GET", relative_url: "me/notifications?filter=stream&limit=4"}
 
         ], function(err, data) {
           if(err) { console.log(err); }
@@ -298,23 +300,26 @@ app.get('/fbaccount', function(req, res) {
           var likes_str_body = data[1].body;
           var photos_str_body = data[2].body;
           var statuses_str_body = data[3].body;
+          var posts_str_body = data[4].body;
+          var notifications_str_body = data[5].body;
 
           var profpic_json_body = eval("(" + profpic_str_body + ")");
           var likes_json_body = eval("(" + likes_str_body + ")");
           var photos_json_body = eval("(" + photos_str_body + ")");
           var statuses_json_body = eval("(" + statuses_str_body + ")");
+          var posts_json_body = eval("(" + posts_str_body + ")");
+          var notifications_json_body = eval("(" + notifications_str_body + ")");
 
-          console.log(statuses_json_body);
+          console.log(notifications_json_body);
 
           var statuses_count = "" + statuses_json_body.data.length;
-          if(statuses_json_body.data.length === 9999) {
-            statuses_count = "9999+";
+          if(statuses_json_body.data.length === 100) {
+            statuses_count = "100+";
           }
 
-
           var likes_count = "" + likes_json_body.data.length;
-          if(likes_json_body.data.length === 9999) {
-            likes_count = "9999+";
+          if(likes_json_body.data.length === 100) {
+            likes_count = "100+";
           }
 
           var photos_count = "" + photos_json_body.data.length;
@@ -322,13 +327,19 @@ app.get('/fbaccount', function(req, res) {
             photos_count = "1000+";
           }
 
+          // substitute null values
+          if(!user.email) { user.email = "N/A"; }
+          if(!user.birthday) { user.email = "N/A"; }
+          if(!user.gender) { user.email = "N/A"; }
+
           res.render("fbaccount", 
           { 
             user: user,
             profile_pic: profpic_json_body.data.url,
             likes_count: likes_count,
             photos_count: photos_count,
-            statuses_count: statuses_count
+            statuses_count: statuses_count,
+            notifications: notifications_json_body.data
           });
 
         });
