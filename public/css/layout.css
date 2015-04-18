@@ -1,3 +1,8 @@
+.login_btn:hover {
+  opacity: 0.3;
+  filter: alpha(opacity=30);
+}
+
 body {
   background-color: #66FFCC;
 }
